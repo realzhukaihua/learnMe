@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# learnMe console: ./run.sh start|stop|restart|status|logs|doctor
+# learnMe console: ./run.sh start|stop|restart|status|logs|doctor|demo
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -73,5 +73,9 @@ case "${1:-start}" in
   status) if running; then echo "running (pid $(cat "$PID_FILE")) → http://$HOST:$PORT"; else echo "stopped"; fi ;;
   logs) tail -n 100 -f "$LOG_FILE" ;;
   doctor) "${PY[@]}" -m server.doctor ;;
-  *) echo "usage: $0 start|stop|restart|status|logs|doctor" >&2; exit 2 ;;
+  demo)  # scripted agents, no key; foreground, Ctrl+C to stop. Without a .venv it needs only uv (no agent SDK download).
+    clean_env
+    if [[ -x .venv/bin/python ]]; then exec .venv/bin/python -m server.demo; fi
+    exec uv run --no-project --python '>=3.11' --with 'fastapi>=0.115' --with 'uvicorn[standard]>=0.30' python -m server.demo ;;
+  *) echo "usage: $0 start|stop|restart|status|logs|doctor|demo" >&2; exit 2 ;;
 esac

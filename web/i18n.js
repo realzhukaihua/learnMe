@@ -84,7 +84,8 @@ const ZH = {
   'Default': '默认', 'Backend': '后端', 'Manager on': '主理人后端', 'unavailable': '不可用',
   'The manager now runs on {name}': '主理人已切换到 {name}',
   // static page (index.html)
-  'Task list': '任务列表', 'Auto-supervise': '自动监督',
+  'Task list': '任务列表', 'Auto-supervise': '自动监督', 'Demo · scripted agents': '演示 · 剧本模式',
+  "Demo mode: the agents' replies are scripted and no model is called; the console around them is the real code. Run ./run.sh demo again to replay.": '演示模式：agent 的回复来自剧本，不调用任何模型；外面的控制台是真实代码。再跑一次 ./run.sh demo 可以重播。',
   'When a task stops, the manager reviews it and continues, corrects or ends it; when it ends, memory and your judgment habits are updated':
     '子任务停下来时，主理人自动验收、推进或纠正；任务结束时自动更新记忆和你的判断习惯',
   '🕘 History': '🕘 历史', 'History: learnMe windows and every Claude Code session on this machine': '历史：learnMe 的窗口，以及这台机器上所有 Claude Code 会话',

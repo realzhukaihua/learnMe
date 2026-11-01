@@ -6,9 +6,30 @@ over them, and learns how *you* decide when to stop, continue or redirect them.*
 
 [中文说明](README.zh-CN.md)
 
-![learnMe with several windows at once](docs/images/overview.png)
-*The manager on the left; on the right, an alert waiting for a decision, a task waiting for a
-permission, and two tasks running. All data in these pictures is made up.*
+![The demo: one request, three task windows, reviews, an alert, a correction that becomes a rule](docs/images/demo.gif)
+*`./run.sh demo`, sped up about 2×. [Watch the full 70-second video (mp4)](https://github.com/realzhukaihua/learnMe/releases/download/v0.1.0/learnme-demo.mp4).*
+
+## Try it in 30 seconds
+
+No API key and no agent CLI needed. The demo runs the real console on scripted agents and made-up
+projects:
+
+```bash
+git clone https://github.com/realzhukaihua/learnMe.git && cd learnMe
+./run.sh demo        # needs uv (https://docs.astral.sh/uv/); then open http://127.0.0.1:8777
+```
+
+Open the page and watch for about a minute. You ask for three things in the main window and the
+manager opens three task windows. Each time one stops, the manager reviews it: it accepts the docs
+fix after re-running the link checker, sends the todo feature back for missing tests, and redirects
+the ETL window that was tuning Spark memory instead of looking at Monday's schema change. An alert
+comes in, a window investigates it and stops for approval. Then the manager tells the ETL window to
+build an index on the production database, you object once, and it writes that down as a rule; when
+a piece of user feedback later needs a production backfill, it asks you first. At the end, type
+"approve rollback" or "run the backfill" in the main window to give the approvals yourself.
+
+What the agents say is scripted. Dispatching, reviews, the alert intake, the feedback watcher and the
+memory diff are the real code. The demo runs in `data/demo`, which is wiped on every start.
 
 ## Why learnMe
 
@@ -49,6 +70,10 @@ same way: they come in, get a window and get handled.
 [Slack](#slack-optional))
 
 ## How it works
+
+![learnMe with several windows at once](docs/images/overview.png)
+*The manager on the left; on the right, an alert waiting for a decision, a task waiting for a
+permission, and two tasks running. All data in these pictures is made up.*
 
 You talk to one **manager** in the main window. Independent work becomes its own **task window**: a
 full agent session (Claude Code, OpenAI Codex, or DeepSeek) in one of your project folders. When a
@@ -166,7 +191,7 @@ emits the same event stream, with tool names mapped onto Claude Code's (`Bash`, 
 Requirements: Python 3.11+, [uv](https://docs.astral.sh/uv/) (or pip), and at least one backend below.
 
 ```bash
-git clone <this repo> learnme && cd learnme
+git clone https://github.com/realzhukaihua/learnMe.git && cd learnMe
 uv sync                    # or: python -m venv .venv && .venv/bin/pip install -e .
 ./run.sh doctor            # which backends are ready, and what the others need
 ./run.sh start             # → http://127.0.0.1:8770

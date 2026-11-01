@@ -26,6 +26,7 @@ log = logging.getLogger("learnme.console")
 PROJECT_ROOTS = CONFIG.project_roots
 IDLE_DISCONNECT_S = 30 * 60
 AUTO_ROUND_LIMIT = 3
+REVIEW_BATCH_S = 3  # wait this long after a task stops, so near-simultaneous stops go in one review
 MEMORY_SCAN_S = 20
 CONSOLIDATE_RETRY_S = {"profile": 6 * 3600, "manager": 6 * 3600, "project": 24 * 3600}
 SETTINGS_FILE = CONFIG.data_dir / "settings.json"
@@ -121,7 +122,7 @@ class Supervisor:
     async def run(self) -> None:
         while True:
             await self.wake.wait()
-            await asyncio.sleep(3)  # batch near-simultaneous completions
+            await asyncio.sleep(REVIEW_BATCH_S)
             manager = self.console.manager()  # not cached: switching its backend replaces the session
             await manager.settled.wait()
             self.wake.clear()

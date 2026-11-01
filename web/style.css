@@ -69,6 +69,7 @@ code, pre { font-family: var(--mono); font-size: 12.5px; }
   background: var(--panel);
 }
 .brand { font-weight: 700; letter-spacing: .3px; font-size: 15px; }
+.demo-tag { padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--amber); border: 1px solid currentColor; white-space: nowrap; }
 #counters { display: flex; gap: 6px; flex-wrap: wrap; }
 .counter {
   display: inline-flex; align-items: center; gap: 6px;

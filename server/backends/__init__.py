@@ -15,6 +15,9 @@ PREFERENCE = ("claude", "codex", "deepseek")
 
 @cache
 def _build(name: str) -> Backend:
+    if CONFIG.demo and name in BACKENDS:
+        from ..demo.backend import DemoBackend
+        return DemoBackend(name)
     if name == "claude":
         from .claude import ClaudeBackend
         return ClaudeBackend()

@@ -1,0 +1,47 @@
+name: Bug report
+description: Something in learnMe doesn't work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please remove tokens, host names and anything private from logs and screenshots before posting.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: If it happens in `./run.sh demo` too, say so; that makes it much easier to reproduce.
+      placeholder: |
+        1. ./run.sh start
+        2. In the main window, ask for ...
+        3. ...
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      multiple: true
+      options: [claude, codex, deepseek, demo mode, not sure]
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of ./run.sh doctor
+      render: text
+  - type: textarea
+    id: log
+    attributes:
+      label: Relevant lines from data/server.log
+      render: text
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "commit or version, OS, Python version, browser"

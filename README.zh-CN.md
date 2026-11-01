@@ -4,8 +4,21 @@
 
 [English](README.md)
 
-![同时开着多个窗口的 learnMe](docs/images/overview-zh.png)
-*左边是主理人；右边是正在跑的子任务和等你决策的告警窗口。图里所有数据都是编造的示例。*
+![演示：一句话开出三个子窗口，自动验收，告警进来，纠正一次变成规则](docs/images/demo.gif)
+*`./run.sh demo` 的录屏，约 2 倍速。[完整视频（70 秒，mp4）](https://github.com/realzhukaihua/learnMe/releases/download/v0.1.0/learnme-demo.mp4)。*
+
+## 30 秒试用
+
+不需要任何 key，也不用装 agent 命令行。演示模式用剧本代替模型，控制台本身是真实代码：
+
+```bash
+git clone https://github.com/realzhukaihua/learnMe.git && cd learnMe
+./run.sh demo        # 需要 uv（https://docs.astral.sh/uv/）；然后打开 http://127.0.0.1:8777
+```
+
+打开页面看一分钟左右：你在主窗口提三件事，主理人开三个子窗口；每个窗口一停，主理人就验收：文档修复它自己重跑链接检查后通过，待办功能缺测试就让它补，ETL 窗口在调 Spark 内存，它纠正方向去查周一的表结构变更。接着一条告警进来，开窗口只读排查，停在等批准。然后主理人让 ETL 窗口在线上库建索引，你反对一次，它把这条写成规则；后面一条用户反馈要在线上库回填数据，它就先来问你。结束后可以在主窗口输入 "approve rollback" 或 "run the backfill"，自己批准。
+
+agent 说的话来自剧本；派任务、验收、告警接入、反馈 watcher、记忆的 diff 都是真实代码在跑。演示剧本是英文的。数据放在 `data/demo`，每次启动清空。
 
 ## 为什么需要主理人
 
@@ -26,6 +39,9 @@
 **4. 你不在时，它替你值守。** 没有 learnMe 时，*Alice（Slack）：「billing 服务的 5xx 是不是你们改的？」* 只能等你哪天看到。有了主理人：你这边的 agent 先读消息，判断自己能不能处理：能处理，就查清楚后自动回复；超出权限或有风险，就请你批准。线上告警、用户反馈也一样，进来就开窗口自动处理。（[无人值守](docs/images/unattended.gif) · [等你批准的告警](docs/images/alert-approval.png)）
 
 ## 怎么工作
+
+![同时开着多个窗口的 learnMe](docs/images/overview-zh.png)
+*左边是主理人；右边是正在跑的子任务和等你决策的告警窗口。图里所有数据都是编造的示例。*
 
 你在主窗口里只和**主理人**说话。独立的事会开成**子窗口**：每个子窗口是一个完整的 agent 会话（Claude Code、OpenAI Codex 或 DeepSeek），跑在你的某个项目目录里。子任务停下时，主理人来验收：通过就结束，没做完就推进，方向错了就纠正，要你拍板的就交给你。每一次干预都会记下来，主理人把它们提炼成你的**画像**（工作习惯和判断方式），以后每个子任务都会读到。它还能作为常驻服务**无人值守**：告警、别人发来的消息、用户反馈会各自开窗口自动处理，有风险的操作等你点头。
 
@@ -112,7 +128,7 @@
 需要 Python 3.11+、[uv](https://docs.astral.sh/uv/)（或 pip），以及下面任意一个后端。
 
 ```bash
-git clone <本仓库> learnme && cd learnme
+git clone https://github.com/realzhukaihua/learnMe.git && cd learnMe
 uv sync                    # 或者：python -m venv .venv && .venv/bin/pip install -e .
 ./run.sh doctor            # 看哪些后端已经能用、其他的还缺什么
 ./run.sh start             # → http://127.0.0.1:8770

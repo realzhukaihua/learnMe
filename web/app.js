@@ -1143,6 +1143,7 @@ async function refreshState() {
   for (const id of [...S.tasks.keys()]) if (!seen.has(id)) S.tasks.delete(id);
   for (const w of S.wins.values()) w.refresh();
   applySettings(st.settings);
+  document.getElementById('demo-tag').hidden = !st.demo;
   renderBackends(st.backends || [], st.manager);
   scheduleSidebar();
   // After a reconnect or resync: the created/waiting messages sent in between never arrived.

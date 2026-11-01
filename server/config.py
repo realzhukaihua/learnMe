@@ -39,6 +39,7 @@ class Config:
     manager_backend: str = ""                 # backend for the main window; empty = same as `backend`
     backends: dict[str, dict[str, Any]] = field(default_factory=dict)  # [backends.<name>] sections
     manager: dict[str, Any] = field(default_factory=dict)                # [manager] section
+    demo: bool = False                        # ./run.sh demo: scripted agents (server/demo), no model calls
 
     @property
     def workspace(self) -> Path:
@@ -82,6 +83,7 @@ def load() -> Config:
     cfg.manager = dict(raw.get("manager") or {})
     cfg.backend = (env.get("LEARNME_BACKEND") or raw.get("backend") or cfg.backend).lower()
     cfg.manager_backend = (env.get("LEARNME_MANAGER_BACKEND") or raw.get("manager_backend") or cfg.backend).lower()
+    cfg.demo = env.get("LEARNME_DEMO") == "1"
     for name in (cfg.backend, cfg.manager_backend):
         if name not in (*BACKENDS, "auto"):
             raise SystemExit(f"learnMe: unknown backend {name!r}; choose auto or one of {', '.join(BACKENDS)}")
