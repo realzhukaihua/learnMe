@@ -1,0 +1,54 @@
+# learnMe configuration. Copy to learnme.toml (git-ignored) and edit; every key is optional.
+# Environment variables override the file: LEARNME_LANG, LEARNME_HOST, LEARNME_PORT,
+# LEARNME_DATA_DIR, LEARNME_PROFILE_DIR, LEARNME_PROJECT_ROOTS (":"-separated),
+# LEARNME_BACKEND, LEARNME_MANAGER_BACKEND, LEARNME_EVENTS_TOKEN, LEARNME_CONFIG (this file's path).
+
+language = "en"                 # "en" or "zh": UI text and the prompts the agents get
+host = "127.0.0.1"              # bind address; keep it local unless you put auth in front
+port = 8770
+# data_dir = "data"             # database, logs, uploads, workspace, manager memory
+# profile_dir = "profile"       # habits.md / judgment.md (created from the *.example.md files)
+project_roots = ["~/code"]      # folders whose subfolders are offered as projects
+
+backend = "claude"              # default backend for task windows: claude | codex | deepseek
+manager_backend = "claude"      # backend for the main window (the manager)
+
+[manager]
+# memory_dir = "data/manager-memory"   # the manager's own memory; MEMORY.md there is loaded every session
+
+[backends.claude]
+# model = "sonnet"              # task windows; empty = Claude Code's default
+# manager_model = "opus"
+# effort = "high"               # reasoning effort, if your Claude Code supports it
+# manager_effort = "high"
+# mcp_transport = "inprocess"   # "inprocess" (default) or "http": how the manager's tools are mounted
+# cli_path = "claude"           # use a specific Claude Code CLI instead of the SDK's bundled one
+
+[backends.deepseek]
+# Claude Code pointed at DeepSeek's Anthropic-compatible API. Needs DEEPSEEK_API_KEY in the environment.
+# base_url = "https://api.deepseek.com/anthropic"
+# api_key_env = "DEEPSEEK_API_KEY"
+# model = "deepseek-flash"
+# small_model = "deepseek-flash"
+# Prices in USD per million tokens, to show a cost (none set: tokens only).
+# price_input_per_mtok = 0.0
+# price_cache_hit_per_mtok = 0.0
+# price_output_per_mtok = 0.0
+
+[backends.codex]
+# OpenAI Codex through `codex app-server`. Log in once with `codex login` (or set OPENAI_API_KEY).
+# command = "codex"
+# model = "gpt-5.5"
+# effort = "high"
+# home = "~/.codex"             # CODEX_HOME for the app-server
+# models = ["gpt-5.5"]          # suggestions for the UI's model picker
+# config = { "model_auto_compact_token_limit" = 200000 }   # extra `-c` style overrides per thread
+
+[events]
+# Autonomous on-call: POST /api/events opens a window per alert. Off unless a token is set.
+# token = "change-me"           # or LEARNME_EVENTS_TOKEN
+# max_per_day = 50
+# project = "my-service"        # default project for events that don't name one
+# backend = "claude"
+# permission_mode = "default"   # tool calls that need approval wait in the window for you
+# runbook = "~/runbooks/on-call.md"   # standing instructions put in front of every event

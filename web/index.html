@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>learnMe</title>
+<link rel="icon" href="/static/favicon-32.png" sizes="32x32">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<link rel="stylesheet" href="/static/style.css">
+<script src="/lang.js"></script>
+<script src="/static/i18n.js"></script>
+<script src="/static/vendor/marked.min.js"></script>
+<script src="/static/vendor/purify.min.js"></script>
+</head>
+<body>
+<header id="topbar">
+  <button id="side-toggle" class="icon-btn" data-i18n-title="Task list">☰</button>
+  <div class="brand">learnMe</div>
+  <nav id="counters"></nav>
+  <div class="top-right">
+    <label class="mgr-backend" data-i18n-title="Manager on"><span data-i18n="Manager on"></span>
+      <select id="manager-backend"></select>
+    </label>
+    <label class="switch" data-i18n-title="When a task stops, the manager reviews it and continues, corrects or ends it; when it ends, memory and your judgment habits are updated">
+      <input type="checkbox" id="supervise"> <span data-i18n="Auto-supervise"></span>
+    </label>
+    <button id="history-btn" class="ghost" data-i18n-title="History: learnMe windows and every Claude Code session on this machine" data-i18n="🕘 History"></button>
+    <button id="memory-btn" class="ghost" data-i18n-title="Memory: your profile, the manager's memory, each project's memory and the change history"><span data-i18n="🧠 Memory"></span><span id="memory-badge" class="mbadge" hidden></span></button>
+    <button id="new-task-btn" class="ghost" data-i18n="＋ New task"></button>
+    <span id="conn" class="conn off" data-i18n-title="Connection" data-i18n="● Disconnected"></span>
+  </div>
+</header>
+
+<div id="layout">
+  <aside id="sidebar">
+    <div id="filters" class="seg"></div>
+    <div id="task-list"></div>
+  </aside>
+  <section id="main-col"></section>
+  <section id="windows-col">
+    <div id="windows"></div>
+    <div id="empty-hint">
+      <p data-i18n="No task windows open yet."></p>
+      <p data-i18n-html='Tell the manager in the main window to "go to &lt;b&gt;some project&lt;/b&gt; and do &lt;b&gt;something&lt;/b&gt;" and it opens a window; or click "New task" at the top right.'></p>
+    </div>
+  </section>
+</div>
+
+<dialog id="new-task">
+  <form method="dialog" id="new-task-form">
+    <h3 data-i18n="Dispatch a task"></h3>
+    <label><span data-i18n="Project folder"></span>
+      <input id="nt-cwd" list="project-list" data-i18n-placeholder="/path/to/project, or type a name to filter" required autocomplete="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
+    </label>
+    <datalist id="project-list"></datalist>
+    <label><span data-i18n="Task"></span>
+      <textarea id="nt-prompt" rows="6" data-i18n-placeholder="What to do, background, what counts as done…  (Ctrl+Enter to dispatch)" required data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"></textarea>
+    </label>
+    <div class="row">
+      <label><span data-i18n="Backend"></span>
+        <select id="nt-backend"></select>
+      </label>
+      <label><span data-i18n="Model"></span>
+        <input id="nt-model" list="model-list" data-i18n-placeholder="Default" autocomplete="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
+      </label>
+      <datalist id="model-list"></datalist>
+      <label><span data-i18n="Permissions"></span>
+        <select id="nt-perm">
+          <option value="" data-i18n="Default"></option>
+          <option value="acceptEdits" data-i18n="Auto-accept edits"></option>
+          <option value="bypassPermissions" data-i18n="Allow everything"></option>
+          <option value="plan" data-i18n="Plan first"></option>
+          <option value="default" data-i18n="Ask every time"></option>
+        </select>
+      </label>
+    </div>
+    <div class="row end">
+      <button type="button" class="ghost" id="nt-cancel" data-i18n="Cancel"></button>
+      <button type="submit" class="primary" data-i18n="Dispatch"></button>
+    </div>
+  </form>
+</dialog>
+
+<aside id="memory-drawer" hidden>
+  <header class="md-head">
+    <div class="seg" id="memory-tabs">
+      <button data-tab="files" class="on" data-i18n="Memory files"></button>
+      <button data-tab="changes" data-i18n="Changes"></button>
+    </div>
+    <input id="memory-q" data-i18n-placeholder="Search all memory (space-separated terms)" autocomplete="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
+    <span id="memory-budget"></span>
+    <button class="icon-btn" id="memory-close" data-i18n-title="Close">✕</button>
+  </header>
+  <div id="memory-files" class="md-body">
+    <nav id="memory-list"></nav>
+    <section id="memory-view">
+      <div class="mv-empty" data-i18n="Pick a memory file on the left"></div>
+    </section>
+  </div>
+  <div id="memory-changes" class="md-body" hidden></div>
+</aside>
+
+<aside id="history-drawer" hidden>
+  <header class="md-head">
+    <div class="seg" id="history-tabs">
+      <button data-tab="windows" class="on" data-i18n="learnMe windows"></button>
+      <button data-tab="sessions" data-i18n="Claude Code sessions"></button>
+    </div>
+    <input id="history-q" data-i18n-placeholder="Search titles, content, projects (space-separated)" autocomplete="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
+    <span id="history-count"></span>
+    <button class="icon-btn" id="history-close" data-i18n-title="Close">✕</button>
+  </header>
+  <div id="history-list" class="md-body"></div>
+</aside>
+
+<div id="toast" hidden></div>
+
+<template id="tpl-win">
+  <section class="win">
+    <header class="win-head">
+      <span class="dot"></span>
+      <div class="win-title">
+        <div class="t"></div>
+        <div class="sub"><span class="proj"></span><span class="meta"></span></div>
+      </div>
+      <div class="win-actions">
+        <span class="ctx" hidden><span class="ctx-bar"><i></i></span><span class="ctx-num"></span></span>
+        <button class="icon-btn" data-act="compact" data-i18n-title="Summarize the conversation so far to free up context (like /compact)" data-i18n="Compact" hidden></button>
+        <button class="icon-btn" data-act="reset" data-i18n-title="Clear the conversation: the manager starts fresh and old messages leave the screen (they stay in the database and searchable). Click twice to confirm" data-i18n="Clear" hidden></button>
+        <button class="icon-btn" data-act="max" data-i18n-title="Maximize / restore">⤢</button>
+        <button class="icon-btn" data-act="pop" data-i18n-title="Open in a new browser window">↗</button>
+        <button class="icon-btn" data-act="hide" data-i18n-title="Hide the window (the task keeps running)">✕</button>
+      </div>
+    </header>
+    <div class="todos" hidden></div>
+    <div class="log"></div>
+    <div class="decide" hidden>
+      <div class="decide-q" data-i18n="Why end this task?"></div>
+      <div class="chips"></div>
+      <div class="decide-row">
+        <input class="decide-reason" data-i18n-placeholder="More reasons (optional; used to learn your judgment)" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
+        <button class="ghost" data-act="end-cancel" data-i18n="Cancel"></button>
+        <button class="danger" data-act="end-confirm" data-i18n="End task"></button>
+      </div>
+    </div>
+    <div class="compact-panel" hidden>
+      <div class="decide-q" data-i18n="Summarize the conversation so far to free up context. Goals, progress and conclusions are kept; details of the process are lost."></div>
+      <div class="decide-row">
+        <input class="compact-focus" data-i18n-placeholder="What to keep (optional), e.g. PR links, open problems" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
+        <button class="ghost" data-act="compact-cancel" data-i18n="Cancel"></button>
+        <button class="warn" data-act="compact-confirm" data-i18n="Compact now"></button>
+      </div>
+    </div>
+    <footer class="win-foot">
+      <textarea class="msg" rows="2" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"></textarea>
+      <div class="btns">
+        <button class="primary" data-act="send" data-i18n="Send"></button>
+        <button class="warn" data-act="correct" title="Ctrl+Enter" data-i18n="Interrupt & correct"></button>
+        <button data-act="interrupt" title="Esc" data-i18n="⏹ Interrupt"></button>
+        <button data-act="continue" data-i18n="Continue"></button>
+        <button class="ghost" data-act="end" data-i18n="End task"></button>
+      </div>
+    </footer>
+  </section>
+</template>
+
+<script>applyI18n();</script>
+<script src="/static/fighter.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+# learnMe Slack bridge: api.slack.com/apps → Create New App → From an app manifest → paste this.
+# Bot-only setup (recommended to start): you can delete the `user:` scopes and `user_events:` below.
+display_information:
+  name: learnMe assistant
+  description: Answers and triages messages for its owner through learnMe
+  background_color: "#2c2d30"
+features:
+  app_home:
+    home_tab_enabled: false
+    messages_tab_enabled: true          # colleagues can DM the bot
+    messages_tab_read_only_enabled: false
+  bot_user:
+    display_name: learnme-assistant
+    always_online: false
+oauth_config:
+  scopes:
+    bot:
+      - chat:write            # reply
+      - app_mentions:read     # @bot in channels
+      - im:history            # DMs to the bot
+      - channels:history      # messages and threads in public channels the bot is in
+      - groups:history        # ... and private channels
+      - channels:read         # channel names
+      - groups:read           # private channel names
+      - users:read            # sender names
+      - users:read.email      # look up the owner by SLACK_OWNER_EMAIL (optional)
+    user:                     # optional: send and read as yourself (only with SLACK_USER_TOKEN)
+      - chat:write
+      - im:history
+      - mpim:history
+      - channels:history
+      - groups:history
+      - channels:read
+      - groups:read
+      - users:read
+settings:
+  event_subscriptions:
+    bot_events:
+      - app_mention
+      - message.im
+      - message.channels
+      - message.groups
+    user_events:
+      - message.im
+      - message.mpim
+      - message.channels
+      - message.groups
+  interactivity:
+    is_enabled: false
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false
