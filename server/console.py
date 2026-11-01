@@ -419,7 +419,14 @@ class Console:
                 return s.id, actor
             return None
 
-        self._announce(self.memory.scan(attribute=who))
+        # A file another session wrote in its turn that is still running is that session's to claim
+        # when its turn ends; scanned now, it would be filed as an outside edit.
+        others = [o for o in self.sessions.values() if o is not s and o.status in ACTIVE]
+        claimed = {p for o in others for p in o.touched}
+        if others:
+            names = {n for o in others for c in o.bash_cmds for n in (Path(f).name for _sc, f in self.memory.files()) if n in c}
+            claimed |= {str(f) for _sc, f in self.memory.files() if f.name in names}
+        self._announce(self.memory.scan(attribute=who, skip_paths=claimed - touched))
 
     def _announce(self, changes: list[dict]) -> None:
         for ch in changes:

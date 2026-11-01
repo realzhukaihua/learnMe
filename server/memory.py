@@ -149,14 +149,17 @@ class MemoryTracker:
             self.store.index_memory_file(path, "", "")
 
     def scan(self, attribute: Callable[[str, str], tuple[str, str] | None] | None = None,
-             skip_scopes: set[str] | None = None, baseline_only: set[str] | None = None) -> list[dict]:
+             skip_scopes: set[str] | None = None, baseline_only: set[str] | None = None,
+             skip_paths: set[str] | None = None) -> list[dict]:
         """Compare tracked files with what we saw last time and record every difference.
 
         `attribute(path, scope)` names the (task_id, actor) that made a change, or None for
         an edit from outside learnMe. `baseline_only` scopes are snapshotted without recording
-        changes (newly tracked projects); so is everything on the very first scan.
+        changes (newly tracked projects); so is everything on the very first scan. `skip_paths`
+        are left for a later scan (files another session that is still running has written).
         """
         skip_scopes = skip_scopes or set()
+        skip_paths = skip_paths or set()
         seen = self.store.memory_snapshots()
         first_scan = not seen
         current = {str(p): scope for scope, p in self.files()}
@@ -165,7 +168,7 @@ class MemoryTracker:
         changes = []
         for path in sorted(paths):
             scope = current.get(path) or seen[path]["scope"]
-            if scope in skip_scopes:
+            if scope in skip_scopes or path in skip_paths:
                 continue
             text = read(Path(path)) if path in current else ""
             if text is None:

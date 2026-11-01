@@ -2,68 +2,118 @@
 
 **A local web console that runs many coding-agent sessions at once, keeps a manager agent watching
 over them, and learns how *you* decide when to stop, continue or redirect them.**
+(Its Chinese nickname is 主理人 agent, roughly "the agent in charge".)
 
 [中文说明](README.zh-CN.md)
+
+![learnMe with several windows at once](docs/images/overview.png)
+*The manager on the left; on the right, an alert waiting for a decision, a task waiting for a
+permission, and two tasks running. All data in these pictures is made up.*
 
 You talk to one **manager** in the main window. Independent work becomes its own **task window**: a
 full agent session (Claude Code, OpenAI Codex, or DeepSeek) in one of your project folders. When a
 task stops, the manager reviews it, pushes it on, corrects it, or brings it to you. Every steering
 decision is logged, and the manager distills them into a **profile** of your habits and judgment
-that every later task reads. With the optional **on-call** entry points, alerts, webhooks or Slack
-messages open their own windows and get handled without you, and anything risky waits for your yes.
+that every later task reads. Run as a service, it also takes **outside input** on its own: alerts,
+messages and user feedback open windows that get handled without you, and anything risky waits for
+your yes.
 
 ## Features
 
-- **Multi-window dispatch.** "Go to *api-server* and find why the nightly job is slow" opens a window
-  there; the main window stays a conversation. Windows stream live: text, thinking, tool calls,
-  permission prompts, todo lists, context meter, cost.
-- **Supervision by a manager agent.** When a task's turn ends, the manager gets a hand-off, checks the
-  evidence (task status, diffs, quick checks), and decides: accept and end it, continue it, redirect
-  it, or ask you. It stops pushing on its own after 3 rounds.
-- **Learns your judgment.** Every *end / continue / correct / interrupt / approve* is recorded with a
-  snapshot of the task, whether you did it, the manager did it on your word, or the manager did it on
-  its own. When a task ends, the manager reads that log, especially where you overruled it, and
-  updates `profile/judgment.md` (when you stop, continue, redirect) and `profile/habits.md` (how you
-  work; every task reads it).
-- **Layered memory that doesn't forget.** Storage is unbounded, loading is selective: only a small
-  always-loaded slice (habits, judgment, the manager's `MEMORY.md` index) goes into prompts. Over budget
-  means splitting into topic files, never deleting. Every memory file (profile, manager memory, each
-  project's `CLAUDE.md` / `AGENTS.md` / agent memory) is tracked, diffed, full-text searchable and
-  revertible from the UI; your own edits count as the strongest correction.
-- **Autonomous on-call.** `POST /api/events` turns an alert (Alertmanager, Grafana, CI, any webhook)
-  into a window that diagnoses read-only first, fixes what the runbook allows, and stops with
-  `NEEDS APPROVAL:` for anything risky; the manager reviews it and brings that to you. The optional
-  **Slack bridge** does the same for messages to your assistant bot: one window per conversation,
-  answering what it can, escalating what needs you, @mentioning you for high-impact approvals, with
-  guards enforced in code.
-- **Pick your model by the key you have.** `backend = "auto"` uses whichever of Claude, Codex or
-  DeepSeek is set up on the machine; each task can choose its own; the manager can switch from the top
-  bar.
-- English and Chinese UI and prompts (`language = "en" | "zh"`).
+### One sentence, several windows
+
+![Dispatch: one message in the main window, three task windows at work](docs/images/dispatch.gif)
+
+*One message in the main window. The manager checks the project history, opens three task windows
+(one of them on Codex), and they start working.*
+
+"Go to *api-server* and find why the nightly job is slow" opens a window there; the main window stays a
+conversation. Windows stream live: text, thinking, tool calls, permission prompts, todo lists, a
+context meter and cost. Before and after: [one message](docs/images/dispatch-before.png) →
+[three windows at work](docs/images/dispatch-after.png).
+
+### Active supervision
+
+When a task's turn ends, the supervisor hands it to the manager, which checks the evidence (task
+status, diffs, quick checks of its own) and decides. It stops pushing on its own after 3 rounds, and
+stays out of tasks you are steering yourself.
+
+| | |
+|---|---|
+| ![Accept](docs/images/supervise-accept.png) | ![Continue](docs/images/supervise-continue.png) |
+| **Accept:** the manager re-runs the link checker itself, then ends the task with the evidence as the reason. | **Continue:** the feature works but tests are missing, so the manager says exactly what is left. |
+| ![Redirect](docs/images/supervise-redirect.png) | ![Escalate](docs/images/supervise-escalate.png) |
+| **Redirect:** 20 minutes of tuning Spark memory, so the manager points it at Monday's schema change. | **Escalate:** a production rollback is for you to decide; the manager reports the cause and the plan, and doesn't approve it. |
+
+![The supervision loop](docs/images/supervision.en.svg)
+
+### Runs unattended: alerts, messages, user feedback
+
+![Unattended: a watcher finds new feedback; the window fixes it and stops for approval; the manager asks you](docs/images/unattended.gif)
+
+*Nobody clicks anything: a watcher finds a new piece of user feedback, a window opens and reproduces
+it, fixes the code with a test, stops at `NEEDS APPROVAL` for a production backfill, and the manager
+brings that decision to you.*
+
+Push items in with `POST /api/events` (alerting tools, CI, chat relays, forms), or let **watchers**
+pull them: a command or URL polled on a schedule, such as new GitHub issues labelled `feedback`.
+Each source can have its own runbook. Windows diagnose read-only first, do what the runbook allows,
+and stop with `NEEDS APPROVAL:` for anything risky.
+
+![An alert window stopped at NEEDS APPROVAL](docs/images/alert-approval.png)
+*An Alertmanager alert: the window reads logs and the deploy history, finds the cause, and stops with
+a reversible rollback plan for a human.*
+
+### Learns how you judge
+
+Every *end / continue / correct / interrupt / approve* is recorded with a snapshot of the task, and
+with who did it: you, the manager on your word, or the manager on its own. Your corrections become
+rules with their evidence, and the next similar case follows them.
+
+| 1. You correct the manager once | 2. A rule with its evidence | 3. The next similar case |
+|---|---|---|
+| ![Correction](docs/images/learn-correction.png) | ![Rule diff](docs/images/learn-rule.png) | ![Rule applied](docs/images/learn-applied.png) |
+| The manager had let a task start a production index build; you say no. It stops the task and writes the rule down. | `judgment.md` gains a rule with the date and your words; the change is attributed to the manager and can be reverted. | Later, a feedback window proposes a production backfill; the manager cites the new rule and asks you instead of approving. |
+
+### Layered memory that doesn't forget
+
+![Memory layers](docs/images/memory-layers.en.svg)
+
+Storage is unbounded, loading is selective: only a small always-loaded slice (habits, judgment, the
+manager's `MEMORY.md` index) goes into prompts. Going over budget means splitting into topic files,
+never deleting. Every memory file (profile, manager memory, each project's `CLAUDE.md` / `AGENTS.md`
+/ agent memory) is tracked, diffed, full-text searchable and revertible from the UI.
+
+![The memory panel with example rules](docs/images/memory.png)
+*The memory panel: your profile (example rules), the manager's memory, each project's memory, and
+the change history.*
+
+### Pick your model by the key you have
+
+`backend = "auto"` uses whichever of Claude, Codex or DeepSeek is set up on the machine; each task
+can choose its own; the manager can switch from the top bar. See [below](#choose-a-backend-by-the-key-you-have).
+
+### English and Chinese
+
+UI and prompts come in both (`language = "en" | "zh"`).
+
+![The Chinese UI](docs/images/overview-zh.png)
 
 ## Architecture
 
-```
- Browser (web/)  ── WebSocket + REST ──┐
-                                       ▼
- ┌──────────────────────── server/ (FastAPI) ────────────────────────┐
- │ console.py   registry · Supervisor (stop → hand-off to manager)   │
- │ manager.py   the manager session + learnMe's tools (ToolDef list) │
- │ session.py   one TaskSession per window: events, decisions log    │
- │ memory.py    tracked memory files: diff, FTS search, revert       │
- │ store.py     SQLite: tasks, events, decisions, memory history     │
- │ mcp_http.py  /mcp/<window>: the tools over MCP Streamable HTTP    │
- │ events.py    /api/events: alerts and webhooks → on-call windows   │
- │ slack_*.py   optional Slack bridge and guarded Slack windows      │
- │                                                                    │
- │ backends/  AgentConnection: start · query · interrupt · compact · │
- │            context_usage · close  →  flat events (text, tool_use, │
- │            tool_result, result, …)                                 │
- │   claude.py    Claude Agent SDK (Claude Code)  ── tools in-process │
- │   deepseek.py  Claude Code → DeepSeek's Anthropic-compatible API   │
- │   codex.py     `codex app-server` JSON-RPC ── tools via HTTP MCP   │
- └────────────────────────────────────────────────────────────────────┘
-```
+![Architecture](docs/images/architecture.en.svg)
+
+| Module | What it does |
+|---|---|
+| `server/console.py` | registry of windows; the Supervisor turns every stop into a review item for the manager |
+| `server/manager.py` | the manager session and learnMe's tools (a backend-neutral `ToolDef` list) |
+| `server/session.py` | one `TaskSession` per window: the event stream and the decision log |
+| `server/memory.py` | tracked memory files: diffs, full-text search, attribution, revert |
+| `server/store.py` | SQLite: tasks, events, decisions, memory history |
+| `server/mcp_http.py` | `/mcp/<window>`: the tools over MCP Streamable HTTP, for backends that can't host them in-process |
+| `server/events.py` | outside input: `POST /api/events` and the watchers |
+| `server/slack_*.py` | the optional Slack bridge and its guarded windows |
+| `server/backends/` | `claude.py` (Claude Agent SDK), `deepseek.py` (Claude Code on DeepSeek's Anthropic-compatible API), `codex.py` (`codex app-server` JSON-RPC) |
 
 The session layer never imports a vendor SDK. A backend turns a `SessionSpec` (cwd, model, permission
 mode, resume/fork id, instructions, tools, permission and guard callbacks) into a live connection and
@@ -152,64 +202,51 @@ per-window bearer token). Permission modes map to Codex approval policy + sandbo
 | Cost | $ reported by Claude Code | $ from tokens × your prices | tokens; $ only with configured prices |
 | Restore Claude Code sessions from history | ✓ | ✗ | ✗ |
 
-## A walk-through
+## Running as a service: alerts, messages, user feedback
 
-What a run on a fresh install looks like (transcript of a real smoke test, shortened):
-
-```
-you      In the project 'demo', calc.py's add() returns the wrong result. Dispatch a task to fix it
-         and verify with a one-line python check.
-manager  → project_history(demo) → recall("calc add") → dispatch_task(project=demo, title="Fix calc.add()")
-         I opened a new window, "Fix calc.add()" (task 8f34b156). It will make the smallest fix,
-         check it with a one-line python -c assert, and report the diff and the output.
-task     $ cat -n calc.py   →   2  return a - b
-         Root cause: add() subtracts. $ sed -i … && git diff && python -c "…assert add(2,3)==5…"  →  ok
-[auto-supervision] Review · "Fix calc.add()" · turn done, needs a decision · auto-continued 0/3
-manager  → task_status → re-checks with other inputs itself → end_task(reason="accepted: …")
-task     Wrapping up: checking whether the project memory needs updating… Nothing to update.
-[auto-supervision] Wrap-up · "Fix calc.add()" · ended, reason: accepted: …
-manager  → task_decisions → nothing overruled, so judgment.md and habits.md stay as they are.
-```
-
-And an alert, with no human in the loop until a decision is needed (also from a real run):
-
-```
-$ curl -X POST localhost:8770/api/events -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-    -d '{"source":"ci","title":"demo: calc check failing","body":"$ python -c \"…assert add(2, 2) == 4\"\nAssertionError","key":"demo-smoke","project":"demo"}'
-{"ok":true,"task_id":"75a4ffbe","appended":false}
-main     🚨 Event from ci: demo: calc check failing → window 75a4ffbe
-task     (read-only) git status, git log, git show HEAD:calc.py; reruns the CI check against the committed
-         file and against the working copy → "A real bug, not noise: the committed add() subtracts; a fix
-         sits uncommitted in the working copy." Pushing it to main is a shared-branch change, so it
-         stops with the exact commands for a human.
-[auto-supervision] Review · "🚨 ci · demo: calc check failing" · last instruction from an external event
-manager  → task_status → checks the repo itself → "The CI alert on demo is waiting for your approval,
-         and I haven't approved it myself. Cause: … Plan: …"
-```
-
-## On-call: alerts and webhooks
+Push: anything that can send an HTTP request.
 
 ```toml
 # learnme.toml
 [events]
 token = "a-long-random-string"     # or LEARNME_EVENTS_TOKEN; the endpoint is off without one
-max_per_day = 50
-project = "my-service"             # default project for events that don't name one
+max_per_day = 50                   # pushed and pulled together
+project = "my-service"             # default project for items that don't name one
 permission_mode = "default"        # tool calls needing approval wait in the window for you
-runbook = "~/runbooks/on-call.md"  # standing instructions, put in front of every event
+
+[events.sources.alertmanager]      # per-source settings
+project = "api-server"
+runbook = "~/runbooks/alerts.md"   # standing instructions, put in front of every item from this source
 ```
 
 ```bash
 curl -X POST http://127.0.0.1:8770/api/events \
   -H "Authorization: Bearer $LEARNME_EVENTS_TOKEN" -H "Content-Type: application/json" \
   -d '{"source": "alertmanager", "title": "API 5xx above 2%", "body": "<the full alert>",
-       "key": "api-5xx", "project": "api-server", "severity": "critical"}'
+       "key": "api-5xx", "severity": "critical"}'
 ```
 
-The same `key` while its window is open is appended to that window instead of opening another.
-The event text is quoted and marked as external data in the prompt, so instructions inside an alert
-are treated as information. Point your alerting tool's webhook at this URL (through a small relay if
-it can't set an `Authorization` header).
+Pull: watchers poll a command or a URL and hand each new item on. For example, to follow user
+feedback filed as GitHub issues:
+
+```toml
+[[events.watchers]]
+name = "feedback"
+command = "gh issue list --repo you/app --label feedback --state open --json number,title,body,url"
+id = "number"                      # the field that identifies an item
+every = 600                        # seconds
+project = "app"
+runbook = "~/runbooks/feedback.md" # e.g. reproduce, classify, fix small bugs with a test; reply with `gh issue comment`
+```
+
+Items are deduplicated by id; at the first poll the items already there are only remembered, so
+starting a watcher doesn't flood you. `batch = true` puts all new items of one poll in one window;
+`url = "..."` with `headers = { Authorization = "Bearer ${TOKEN}" }` polls an HTTP API instead.
+
+The same `key` while its window is open is appended to that window instead of opening another. The
+item is quoted and marked as external data in the prompt, so instructions inside it are treated as
+information. Point your alerting tool's webhook at the push URL (through a small relay if it can't
+set an `Authorization` header).
 
 ## Slack (optional)
 

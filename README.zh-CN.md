@@ -1,44 +1,89 @@
-# learnMe
+# learnMe（主理人 agent）
 
-**一个本地网页控制台：同时跑很多个编程 agent 会话，由一个主控 agent 盯着它们，并且学习*你*怎么判断该停、该继续、该换方向。**
+**主理人 agent：一个本地网页控制台。它同时跑很多个编程 agent 会话，自己盯着它们，并且学习*你*怎么判断该停、该继续、该换方向。**
 
 [English](README.md)
 
-你在主窗口里只和一个**主控**说话。独立的事会开成**子窗口**：每个子窗口是一个完整的 agent 会话（Claude Code、OpenAI Codex 或 DeepSeek），跑在你的某个项目目录里。子任务停下时，主控来验收：通过就结束，没做完就推进，方向错了就纠正，要你拍板的就报给你。每一次干预都会记下来，主控把它们提炼成你的**画像**（工作习惯和判断方式），以后每个子任务都会读到。开了**自动值守**入口后，告警、webhook、Slack 消息会各自开窗口自动处理，有风险的操作要等你点头。
+![同时开着多个窗口的 learnMe](docs/images/overview-zh.png)
+*左边是主理人；右边是正在跑的子任务和等你决策的告警窗口。图里所有数据都是编造的示例。*
+
+你在主窗口里只和**主理人**说话。独立的事会开成**子窗口**：每个子窗口是一个完整的 agent 会话（Claude Code、OpenAI Codex 或 DeepSeek），跑在你的某个项目目录里。子任务停下时，主理人来验收：通过就结束，没做完就推进，方向错了就纠正，要你拍板的就交给你。每一次干预都会记下来，主理人把它们提炼成你的**画像**（工作习惯和判断方式），以后每个子任务都会读到。它还能作为常驻服务**无人值守**：告警、别人发来的消息、用户反馈会各自开窗口自动处理，有风险的操作等你点头。
 
 ## 功能
 
-- **多窗口派发。** 说「去 *api-server* 查一下夜间任务为什么慢」，主控就在那个项目里开一个窗口；主窗口始终只是对话。窗口实时显示文字、思考、工具调用、权限确认、todo 清单、上下文用量和费用。
-- **主控监督。** 子任务一轮结束，主控收到交接，看证据（任务状态、diff、快速自查）后决定：验收结束、继续推进、纠正方向，或者交给你。自动推进最多 3 轮。
-- **学习你的判断。** 每一次「结束 / 继续 / 纠正 / 中断 / 批准」都连同当时的任务快照记下来，并区分是你亲自做的、主控按你的话做的，还是主控自己做的。任务结束时主控读这份记录，重点看你推翻它的地方，更新 `profile/judgment.md`（什么时候停、继续、换方向）和 `profile/habits.md`（你的工作习惯，所有子任务都读）。
-- **分层记忆，不丢知识。** 存储不设上限，加载有选择：只有一小块常驻内容（习惯、判断、主控的 `MEMORY.md` 索引）进 prompt；超了预算就拆成主题文件，绝不靠删知识压字数。所有记忆文件（画像、主控记忆、各项目的 `CLAUDE.md` / `AGENTS.md` / agent 记忆）都有追踪、diff、全文检索，界面上可以回滚；你亲手改的算最重要的纠正信号。
-- **自动值守。** `POST /api/events` 把一条告警（Alertmanager、Grafana、CI、任意 webhook）变成一个窗口：先只读诊断，runbook 允许的就自己处理，有风险的以 `NEEDS APPROVAL:` 停下，由主控验收后报给你。可选的 **Slack 桥** 对发给助手 bot 的消息做同样的事：每个对话一个窗口，能回的自己回，要你表态的交给你，影响大的在 thread 里 @你 等批准，护栏在代码里强制执行。
-- **有什么 key 就用什么模型。** `backend = "auto"` 自动选本机已经配好的 Claude、Codex 或 DeepSeek；每个任务也可以单独选；主控的后端在顶栏切换。
-- 界面和提示词都有中英文两套（`language = "en" | "zh"`）。
+### 一句话，开出几个窗口（自动分发）
+
+![自动分发：主窗口一句话，开出三个子窗口开始干活](docs/images/dispatch.gif)
+
+*在主窗口说一句话。主理人先查项目历史，再开出三个子窗口（其中一个用 Codex），它们马上开始干活。*
+
+说「去 *api-server* 查一下夜间任务为什么慢」，主理人就在那个项目里开一个窗口；主窗口始终只是对话。窗口实时显示文字、思考、工具调用、权限确认、todo 清单、上下文用量和费用。发消息前后对比：[一句话](docs/images/dispatch-before.png) → [三个窗口在干活](docs/images/dispatch-after.png)。
+
+### 主动监督
+
+子任务一轮结束，监督器把它交给主理人；主理人看证据（任务状态、diff、自己做的快速检查）后做决定。自动推进最多 3 轮；你本人正在指挥的任务它不插手。
+
+| | |
+|---|---|
+| ![通过](docs/images/supervise-accept.png) | ![继续](docs/images/supervise-continue.png) |
+| **通过：** 主理人自己重跑一遍链接检查，再把证据写进结束理由。 | **继续：** 功能能用但缺测试，主理人说清还差什么。 |
+| ![纠正方向](docs/images/supervise-redirect.png) | ![交给用户](docs/images/supervise-escalate.png) |
+| **纠正方向：** 调了 20 分钟 Spark 内存，主理人让它去查周一的表结构变更。 | **交给用户：** 线上回滚要你决定，主理人报原因和方案，不替你批准。 |
+
+![监督流程](docs/images/supervision.zh.svg)
+
+### 无人值守：告警、消息、用户反馈
+
+![无人值守：watcher 发现新反馈，窗口修复后停在等待批准，主理人交给你](docs/images/unattended.gif)
+
+*全程没人点任何东西：watcher 发现一条新的用户反馈，窗口自动打开、复现、改代码并补测试，因为要在线上数据库回填而停在 `NEEDS APPROVAL`，主理人把这个决定交给你。*
+
+外部系统可以用 `POST /api/events` 把内容推进来（告警系统、CI、聊天机器人转发、表单），也可以让 **watcher** 定时去拉：按计划跑一条命令或请求一个 URL，比如拉取打了 `feedback` 标签的 GitHub issue。每个来源可以配自己的 runbook。窗口先只读诊断，runbook 允许的自己做，有风险的以 `NEEDS APPROVAL:` 停下。
+
+![停在 NEEDS APPROVAL 的告警窗口](docs/images/alert-approval.png)
+*一条 Alertmanager 告警：窗口看日志和上线记录，找到原因，留下一个可回滚的方案等人批准。*
+
+### 学习你的判断方式
+
+每一次「结束 / 继续 / 纠正 / 中断 / 批准」都连同当时的任务快照记下来，并区分是你本人、主理人按你的话，还是主理人自己做的。你纠正一次，就变成一条带依据的规则，下次同类情况按新规则办。
+
+| 1. 你纠正一次 | 2. 多了一条带依据的规则 | 3. 下次同类情况 |
+|---|---|---|
+| ![纠正](docs/images/learn-correction.png) | ![规则 diff](docs/images/learn-rule.png) | ![按新规则处理](docs/images/learn-applied.png) |
+| 主理人放任务去线上建索引，你说不行；它叫停任务，把规则写下来。 | `judgment.md` 多了一条规则，带日期和你的原话；改动记在主理人名下，可以回滚。 | 后来一个反馈窗口提出要在线上回填数据，主理人引用新规则，交给你而不是自己批准。 |
+
+### 分层记忆，不丢知识
+
+![记忆分层](docs/images/memory-layers.zh.svg)
+
+存储不设上限，加载有选择：只有一小块常驻内容（习惯、判断、主理人的 `MEMORY.md` 索引）进 prompt；超了预算就拆成主题文件，绝不靠删知识压字数。所有记忆文件（画像、主理人记忆、各项目的 `CLAUDE.md` / `AGENTS.md` / agent 记忆）都有追踪、diff、全文检索，界面上可以回滚。
+
+![记忆面板（示例规则）](docs/images/memory-zh.png)
+*记忆面板：你的画像（示例规则）、主理人记忆、各项目记忆和变更记录。*
+
+### 有什么 key 就用什么模型
+
+`backend = "auto"` 自动用本机已经配好的 Claude、Codex 或 DeepSeek；每个任务也可以单独选；主理人的后端在顶栏切换。见[下文](#有什么-key-就用什么后端)。
+
+### 中英文
+
+界面和提示词都有中英文两套（`language = "en" | "zh"`），英文界面见[英文说明](README.md)。
 
 ## 架构
 
-```
- 浏览器 (web/)  ── WebSocket + REST ──┐
-                                      ▼
- ┌──────────────────────── server/ (FastAPI) ────────────────────────┐
- │ console.py   注册表 · Supervisor（任务停下 → 交给主控验收）       │
- │ manager.py   主控会话 + learnMe 的工具（ToolDef 列表）            │
- │ session.py   每个窗口一个 TaskSession：事件流、决策记录           │
- │ memory.py    记忆文件追踪：diff、全文检索、回滚                   │
- │ store.py     SQLite：任务、事件、决策、记忆变更历史               │
- │ mcp_http.py  /mcp/<窗口>：通过 MCP Streamable HTTP 提供工具        │
- │ events.py    /api/events：告警和 webhook → 值守窗口                │
- │ slack_*.py   可选的 Slack 桥和带护栏的 Slack 窗口                  │
- │                                                                    │
- │ backends/  AgentConnection：start · query · interrupt · compact · │
- │            context_usage · close → 统一事件（text、tool_use、      │
- │            tool_result、result …）                                 │
- │   claude.py    Claude Agent SDK（Claude Code），工具进程内挂载     │
- │   deepseek.py  Claude Code → DeepSeek 的 Anthropic 兼容接口        │
- │   codex.py     `codex app-server` JSON-RPC，工具走 HTTP MCP        │
- └────────────────────────────────────────────────────────────────────┘
-```
+![架构](docs/images/architecture.zh.svg)
+
+| 模块 | 作用 |
+|---|---|
+| `server/console.py` | 窗口注册表；监督器把每次停下变成交给主理人的验收项 |
+| `server/manager.py` | 主理人会话和 learnMe 的工具（与后端无关的 `ToolDef` 列表） |
+| `server/session.py` | 每个窗口一个 `TaskSession`：事件流和决策记录 |
+| `server/memory.py` | 记忆文件追踪：diff、全文检索、归属、回滚 |
+| `server/store.py` | SQLite：任务、事件、决策、记忆变更历史 |
+| `server/mcp_http.py` | `/mcp/<窗口>`：用 MCP Streamable HTTP 提供工具，给不能进程内挂载的后端用 |
+| `server/events.py` | 外部输入：`POST /api/events` 和 watcher |
+| `server/slack_*.py` | 可选的 Slack 桥和带护栏的 Slack 窗口 |
+| `server/backends/` | `claude.py`（Claude Agent SDK）、`deepseek.py`（Claude Code 接 DeepSeek 的 Anthropic 兼容接口）、`codex.py`（`codex app-server` JSON-RPC） |
 
 会话层不直接依赖任何厂商 SDK。后端把 `SessionSpec`（工作目录、模型、权限模式、恢复/分叉 id、系统提示、工具、权限和护栏回调）变成一个活的连接，吐出同一套事件；工具名统一映射成 Claude Code 的（`Bash`、`Edit`、`TodoWrite`、`mcp__learnme__dispatch_task`），所以界面对所有后端渲染一致。详见 `server/backends/base.py`。
 
@@ -73,7 +118,7 @@ backend = "codex"           # 子任务默认用的后端
 manager_backend = "claude"  # 主窗口用的后端
 ```
 
-或者 `LEARNME_BACKEND=deepseek ./run.sh start`。每个任务也可以单独选后端（派发对话框里的「后端」，或主控调用 `dispatch_task(backend=...)`）；顶栏可以切换主控的后端（切换后对话从头开始，旧消息仍可搜索）。
+或者 `LEARNME_BACKEND=deepseek ./run.sh start`。每个任务也可以单独选后端（派发对话框里的「后端」，或主理人调用 `dispatch_task(backend=...)`）；顶栏可以切换主理人的后端（切换后对话从头开始，旧消息仍可搜索）。
 
 ### Claude
 
@@ -98,63 +143,51 @@ manager_backend = "claude"  # 主窗口用的后端
 | 分叉会话 | ✓ | ✓ | ✓ `thread/fork`（适配器支持；界面只对 Claude Code 历史会话分叉） |
 | 窗口里的权限确认 | ✓ 所有工具 | ✓ 所有工具 | ✓ Codex 请求审批的命令和改文件 |
 | 护栏（在代码里否决工具调用） | ✓ 每次工具调用 | ✓ 每次工具调用 | 部分：审批请求 + 所有 learnMe 工具 |
-| 主控工具（MCP） | 进程内（或 HTTP） | 进程内 | HTTP |
+| 主理人工具（MCP） | 进程内（或 HTTP） | 进程内 | HTTP |
 | 手动压缩 | ✓ 带 learnMe 的摘要规则 | ✓ 带 learnMe 的摘要规则 | ✓ 用 Codex 自己的摘要（不能加规则和重点） |
 | 上下文用量 | 精确 | 精确（按 Claude Code 的算法） | 来自 token 用量通知 |
 | 费用 | Claude Code 报的美元 | token × 你配置的价格 | 只有 token；配置价格后才有美元 |
 | 从历史恢复 Claude Code 会话 | ✓ | ✗ | ✗ |
 
-## 演示
+## 作为服务运行：告警、消息、用户反馈
 
-新装好之后一次真实冒烟测试的记录（有删节）：
-
-```
-你       在 demo 项目里，calc.py 的 add() 结果不对。派个任务修一下，用一行 python 验证。
-主控     → project_history(demo) → recall("calc add") → dispatch_task(project=demo, title="Fix calc.add()")
-         开了窗口「Fix calc.add()」（任务 8f34b156），它会做最小修改、用 python -c 断言验证，再交回 diff 和输出。
-子任务   $ cat -n calc.py → 2  return a - b
-         根因：add() 做了减法。$ sed -i … && git diff && python -c "…assert add(2,3)==5…" → ok
-[自动监督] 验收 · 「Fix calc.add()」 · 本轮完成，待决策 · 已自动推进 0/3 轮
-主控     → task_status → 自己换几组输入再验一遍 → end_task(reason="验收通过：…")
-子任务   收尾：检查项目记忆是否需要更新… 无需更新。
-[自动监督] 收尾 · 「Fix calc.add()」 · 已结束
-主控     → task_decisions → 没有被推翻的地方，judgment.md 和 habits.md 不用改。
-```
-
-一条告警，直到需要拍板之前都不用人管（同样是真实运行）：
-
-```
-$ curl -X POST localhost:8770/api/events -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-    -d '{"source":"ci","title":"demo: calc check failing","body":"…AssertionError","key":"demo-smoke","project":"demo"}'
-{"ok":true,"task_id":"75a4ffbe","appended":false}
-主窗口   🚨 来自 ci 的事件：demo: calc check failing → 窗口 75a4ffbe
-子任务   （只读）git status、git log、git show HEAD:calc.py；分别对已提交的文件和工作区重跑 CI 检查
-         →「是真 bug 不是噪音：已提交的 add() 做了减法，修复在工作区里还没提交。」推到 main 会动共享分支，
-         所以停下来，写好给人执行的命令。
-[自动监督] 验收 · 「🚨 ci · demo: calc check failing」 · 最近一次指令来自外部事件
-主控     → task_status → 自己查一遍仓库 →「这条 CI 告警在等你批准，我没有替你批准。原因：… 方案：…」
-```
-
-## 自动值守：告警和 webhook
+推：任何能发 HTTP 请求的系统。
 
 ```toml
 # learnme.toml
 [events]
 token = "一个足够长的随机串"      # 或 LEARNME_EVENTS_TOKEN；不设就不开放这个入口
-max_per_day = 50
-project = "my-service"             # 事件没写项目时用的默认项目
+max_per_day = 50                   # 推和拉合计
+project = "my-service"             # 没写项目时用的默认项目
 permission_mode = "default"        # 需要授权的工具调用会停在窗口里等你
-runbook = "~/runbooks/on-call.md"  # 值守的长期规则，放在每个事件前面
+
+[events.sources.alertmanager]      # 按来源单独配置
+project = "api-server"
+runbook = "~/runbooks/alerts.md"   # 这个来源的长期规则，放在每条内容前面
 ```
 
 ```bash
 curl -X POST http://127.0.0.1:8770/api/events \
   -H "Authorization: Bearer $LEARNME_EVENTS_TOKEN" -H "Content-Type: application/json" \
   -d '{"source": "alertmanager", "title": "API 5xx 超过 2%", "body": "<完整告警>",
-       "key": "api-5xx", "project": "api-server", "severity": "critical"}'
+       "key": "api-5xx", "severity": "critical"}'
 ```
 
-同一个 `key` 的事件在窗口还开着时会追加到那个窗口，不会重复开。事件内容在 prompt 里以引用块标成外部数据，告警里夹带的指令只当信息。把告警系统的 webhook 指到这个地址即可（不能加 `Authorization` 头的，中间加一层小转发）。
+拉：watcher 定时跑命令或请求 URL，把新条目交给 learnMe。例如跟踪以 GitHub issue 形式提交的用户反馈：
+
+```toml
+[[events.watchers]]
+name = "feedback"
+command = "gh issue list --repo you/app --label feedback --state open --json number,title,body,url"
+id = "number"                      # 标识一条内容的字段
+every = 600                        # 秒
+project = "app"
+runbook = "~/runbooks/feedback.md" # 比如：复现、分类、小 bug 带测试修掉；用 `gh issue comment` 回复
+```
+
+按 id 去重；第一次拉取时已经存在的内容只记基线，不会一启动就开一堆窗口。`batch = true` 把一次拉到的新内容合进一个窗口；改用 `url = "..."` 加 `headers = { Authorization = "Bearer ${TOKEN}" }` 就是轮询 HTTP 接口。
+
+同一个 `key` 的内容在窗口还开着时追加到那个窗口，不会重复开。内容在 prompt 里以引用块标成外部数据，里面夹带的指令只当信息。把告警系统的 webhook 指到推送地址即可（不能加 `Authorization` 头的，中间加一层小转发）。
 
 ## Slack（可选）
 
@@ -162,7 +195,7 @@ curl -X POST http://127.0.0.1:8770/api/events \
 
 ## 你的画像
 
-`profile/habits.md` 和 `profile/judgment.md` 首次启动时从 `*.example.md` 模板复制而来，可以随便改，也可以让主控慢慢长出来；格式说明见 [profile/README.md](profile/README.md)。
+`profile/habits.md` 和 `profile/judgment.md` 首次启动时从 `*.example.md` 模板复制而来，可以随便改，也可以让主理人慢慢长出来；格式说明见 [profile/README.md](profile/README.md)。
 
 ## 开发
 

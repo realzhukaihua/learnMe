@@ -3,8 +3,8 @@
 ZH: dict[str, str] = {
     # console / supervision
     "the user (in the task window)": "用户本人（在子窗口里）",
-    "the manager (on the user's word in the main window)": "主控（按用户在主窗口的指示）",
-    "the manager (automatic supervision)": "主控（自动监督）",
+    "the manager (on the user's word in the main window)": "主理人（按用户在主窗口的指示）",
+    "the manager (automatic supervision)": "主理人（自动监督）",
     "outside input": "外部输入",
     "a Slack window": "Slack 子窗口",
     '"{title}" task_id={id} · project {project}': "「{title}」 task_id={id} · 项目 {project}",
@@ -22,7 +22,7 @@ ZH: dict[str, str] = {
     "—— Above is the original session. Send a message to continue from here: it forks a new session, the original is untouched ——":
         "—— 以上是原会话的记录。接着发消息就从这里继续：会分叉出新会话，原会话不受影响 ——",
     "Only project memory is reorganized by a task; the manager layers the profile and its own memory itself":
-        "只有项目记忆通过派任务整理；画像和主控记忆由主控自己分层",
+        "只有项目记忆通过派任务整理；画像和主理人记忆由主理人自己分层",
     "Memory layering · {name}": "记忆分层整理 · {name}",
     "- Wrap-up · {head} · ended, reason: {reason} (ended by {by})": "- 收尾 · {head} · 已结束，原因：{reason}（{by}结束）",
     "A server restart cut this turn off; continuing automatically": "服务重启打断了这一轮，正在自动接着做",
@@ -41,8 +41,8 @@ ZH: dict[str, str] = {
     "📥 Watcher {name} failed: {err}": "📥 watcher {name} 拉取失败：{err}",
     # main
     "No such task": "任务不存在",
-    "The manager is busy; wait for this turn to finish": "主控正在处理，等这一轮结束再切换",
-    "—— The manager now runs on {name}; the conversation starts fresh ——": "—— 主控已切换到 {name}，对话从头开始 ——",
+    "The manager is busy; wait for this turn to finish": "主理人正在处理，等这一轮结束再切换",
+    "—— The manager now runs on {name}; the conversation starts fresh ——": "—— 主理人已切换到 {name}，对话从头开始 ——",
     "No such folder: {path}": "目录不存在：{path}",
     "The main window can't be ended; clear its conversation instead": "主窗口不能结束，可以清空对话",
     "This turn is still running; compact after it stops": "这一轮还在跑，等它停下再压缩",
@@ -70,7 +70,7 @@ ZH: dict[str, str] = {
     "Interrupt a task's running turn (the session is kept and can continue later).": "中断子任务当前正在进行的回合（会话保留，之后可以继续）。",
     "End a task (interrupt, close the session, mark it ended). Say clearly in reason why it ends.": "结束一个子任务（中断并关闭会话，标记为已结束）。reason 写清楚为什么结束。",
     "The decisions made on tasks (end / continue / correct / interrupt / approve…, who made them, the task's state at the time), to learn how the user judges. Without task_id: the latest across all tasks. actor: user = the user in the task window, manager = you on the user's word in the main window, auto = you on your own during supervision.":
-        "查看在任务上做过的决策记录（终止/继续/纠正/中断/授权…，谁做的、当时的状态），用来学习用户的判断。不填 task_id 则返回最近所有任务的记录。actor: user=用户在子窗口里亲自操作, manager=主控按用户在主窗口的指示, auto=主控自动监督时自己的判断。",
+        "查看在任务上做过的决策记录（终止/继续/纠正/中断/授权…，谁做的、当时的状态），用来学习用户的判断。不填 task_id 则返回最近所有任务的记录。actor: user=用户在子窗口里亲自操作, manager=主理人按用户在主窗口的指示, auto=主理人自动监督时自己的判断。",
     "What earlier learnMe tasks did in a project: what they did, the outcome, why they ended. Check before dispatching.":
         "查看某个项目以前在 learnMe 里做过的任务：做了什么、结果、为什么结束。派发前先查。",
     "Search across memory: every memory file (profile, your memory, each project's memory), the decision log and past tasks, by keyword. Separate keywords with spaces; all must match.":
@@ -142,13 +142,13 @@ ZH: dict[str, str] = {
     "Edit failed: {e}": "修改失败：{e}",
     "ts of the message to edit: from slack_reply, or the bot's own message in slack_thread": "要改的那条消息的 ts：slack_reply 返回的 ts，或 slack_thread 里助手自己那条标的 ts",
     "the full new text": "改成的完整正文",
-    "—— Conversation cleared; the manager starts fresh (old messages stay searchable) ——": "—— 已清空对话，主控从头开始（旧消息仍可搜索）——",
+    "—— Conversation cleared; the manager starts fresh (old messages stay searchable) ——": "—— 已清空对话，主理人从头开始（旧消息仍可搜索）——",
     "the message (Slack mrkdwn)": "消息正文（Slack mrkdwn）",
     # memory
     "Project · {name}": "项目 · {name}",
     "… (diff too long, truncated)": "… (diff 过长，已截断)",
     "Your profile": "你的画像",
-    "Manager memory": "主控记忆",
+    "Manager memory": "主理人记忆",
     "Only an agent memory directory can be layered": "只有 agent 记忆目录可以分层整理",
     "{n} orphan files ({names})": "{n} 个孤儿文件（{names}）",
     "{n} dead links ({names})": "{n} 个死链（{names}）",
@@ -165,13 +165,13 @@ ZH: dict[str, str] = {
     "The session was closed": "会话已关闭",
     "The user interrupted the task": "用户中断了任务",
     "✓ Task ended": "✓ 任务已结束",
-    "✓ The manager ended the task": "✓ 主控结束了任务",
+    "✓ The manager ended the task": "✓ 主理人结束了任务",
     "Wrapping up: checking whether the project memory needs updating…": "收尾：检查项目记忆是否需要更新…",
     "The user declined this action": "用户拒绝了这个操作",
     "Resumed the existing session": "已在原会话上恢复",
     "🗜 Context {pct}% full: saving corrections and conclusions to memory first, then compacting…": "🗜 上下文已用 {pct}%：先把还没写进记忆的纠正和结论存下来，然后压缩…",
     "⏹ You interrupted the task": "⏹ 你中断了任务",
-    "⏹ The manager interrupted the task": "⏹ 主控中断了任务",
+    "⏹ The manager interrupted the task": "⏹ 主理人中断了任务",
     "Wrap-up did not finish; ending anyway": "收尾没有完成，直接结束",
     "Forked from the original Claude Code session; continuing its context": "已从原 Claude Code 会话分叉，接着原来的上下文继续",
     "The agent process exited unexpectedly": "Agent 进程意外退出",
@@ -185,7 +185,7 @@ ZH: dict[str, str] = {
     "Rate limited; resets at {when}": "触发限流，{when} 重置",
     # slack
     "While handling someone else's Slack message, the manager can't be changed (memory, profile, learnMe's code and config, the guard rules)":
-        "处理别人的 Slack 消息时不能修改主控（记忆、画像、learnMe 的代码和配置、护栏规则）",
+        "处理别人的 Slack 消息时不能修改主理人（记忆、画像、learnMe 的代码和配置、护栏规则）",
     "While handling someone else's Slack request, connector tools can't be used ({tool}): they act as the owner in other services. Hand it to the user if it's needed.":
         "处理别人的 Slack 请求时不能用连接器类工具（{tool}）：它们以主人的身份操作别的服务。需要的话交给用户。",
     "the owner": "主人",
@@ -196,8 +196,8 @@ ZH: dict[str, str] = {
     "The text looks like it contains a {label}; refused (never post tokens, passwords or private keys on Slack).": "内容里有疑似 {label} 的东西，已拒绝（不要在 Slack 上发 token、密码或私钥）。",
     "as {name}": "以 {name} 本人身份",
     "as the bot": "以 bot 身份",
-    "(the manager wrote no reply this turn; status {status}; see the main window)": "（主控这一轮没有文字回复，状态：{status}，详情看主窗口）",
-    "The manager's reply looks like it contains a {label}, so it wasn't posted to Slack; see the main window.": "主控的回复里有疑似 {label} 的内容，没贴到 Slack，请到主窗口看。",
+    "(the manager wrote no reply this turn; status {status}; see the main window)": "（主理人这一轮没有文字回复，状态：{status}，详情看主窗口）",
+    "The manager's reply looks like it contains a {label}, so it wasn't posted to Slack; see the main window.": "主理人的回复里有疑似 {label} 的内容，没贴到 Slack，请到主窗口看。",
     "(Window {id} handled this conversation before and has ended: {reason}. Its last words: {last})": "（这个对话之前由窗口 {id} 处理过，已结束：{reason}。它最后说的是：{last}）",
     "auto ({n}/{limit} sent automatically this hour)": "auto（本小时已自动发 {n}/{limit} 条）",
     "draft (everything goes to the user; nothing is sent automatically)": "draft（一律交给用户，不自动发）",
@@ -263,7 +263,7 @@ ZH: dict[str, str] = {
     "this conversation was handed to the user": "这个对话已经交给用户了",
     "this conversation was marked as needing no reply": "这个对话已经标记为不需要回复",
     "The new text is empty": "新内容是空的",
-    "Posted messages are edited only on the owner's word (an @assistant on Slack, or relayed by the manager).": "改已经发出的消息，只能按主人本人的话改（他在 Slack 上 @助手，或主控转来的）。",
+    "Posted messages are edited only on the owner's word (an @assistant on Slack, or relayed by the manager).": "改已经发出的消息，只能按主人本人的话改（他在 Slack 上 @助手，或主理人转来的）。",
     "No message with ts={ts} in this conversation": "这个对话里找不到 ts={ts} 的消息",
     "Only the bot's own messages can be edited, not anyone else's (the owner's included).": "只能改 bot 自己发的消息；别人的（包括主人本人的）不能改。",
     "The text is empty": "内容是空的",
@@ -302,7 +302,7 @@ ZH: dict[str, str] = {
     "Slack has handled {n} messages today (yours included), the daily limit; later ones today are neither handled nor answered (SLACK_MESSAGES_PER_DAY)":
         "Slack 今天已处理 {n} 条消息（含你本人的），到上限了，今天后面的不再处理，也不回复（SLACK_MESSAGES_PER_DAY）",
     "[Slack DM]": "[Slack 私信]",
-    "The manager's reply couldn't be posted to your Slack DM; see the server log": "主控的回复没能贴回 Slack 私信，详情见服务日志",
+    "The manager's reply couldn't be posted to your Slack DM; see the server log": "主理人的回复没能贴回 Slack 私信，详情见服务日志",
     "(empty: reply straight into the DM)": "（留空：直接回在私信里）",
     "empty so far.": "还没有内容。",
     "> … ({n} messages skipped; read them with slack_thread if needed)": "> …（中间省略 {n} 条，需要时用 slack_thread 读）",

@@ -171,3 +171,28 @@ def test_watcher_follows_new_items(tmp_path):
         await c.shutdown()
 
     asyncio.run(asyncio.wait_for(main(), 60))
+
+
+def test_memory_edit_is_credited_to_the_session_that_made_it():
+    """Another session finishing its turn must not file a still-running session's edit as external."""
+    from server.console import Console
+
+    async def main():
+        c = Console()
+        m = c.manager()
+        judgment = c.memory.profile_dir / "judgment.md"
+        task = c.create_task("something", str(CONFIG.project_roots[0] / "demo"), title="other")
+        await until(lambda: task.status == "idle" and task.task["turns"] >= 1)
+        # The manager is mid-turn and has edited judgment.md.
+        m.update(status="running")
+        m.touched.add(str(judgment))
+        judgment.write_text(judgment.read_text() + "\n- A new rule, with its evidence.\n")
+        c.after_turn(task)  # the other task's turn ends first
+        assert not [ch for ch in c.memory.history(5) if ch["path"] == str(judgment) and ch["actor"] == "external"]
+        m.update(status="idle")
+        c.after_turn(m)
+        latest = c.memory.history(1)[0]
+        assert latest["path"] == str(judgment) and latest["actor"] == "manager"
+        await c.shutdown()
+
+    asyncio.run(asyncio.wait_for(main(), 60))
