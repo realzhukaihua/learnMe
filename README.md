@@ -10,6 +10,46 @@ over them, and learns how *you* decide when to stop, continue or redirect them.*
 *The manager on the left; on the right, an alert waiting for a decision, a task waiting for a
 permission, and two tasks running. All data in these pictures is made up.*
 
+## Why learnMe
+
+**1. Agents stop halfway, and someone has to keep nudging them.** Without learnMe:
+
+> **Agent:** Sorry, I ran into an error, so I stopped.  
+> **Me:** If there's an error, fix it.  
+> **Agent:** Sure. When there's an error, I'll find out what caused it…  
+> **Me:** So did you fix it?  
+> **Agent:** Sure…
+
+With learnMe, the manager reviews every task the moment it stops. Not done yet: it tells the window to
+keep going and what is still missing. Going in circles: it corrects the direction. Nobody has to sit
+there asking "did you fix it?" ([accept](docs/images/supervise-accept.png) ·
+[continue](docs/images/supervise-continue.png) · [redirect](docs/images/supervise-redirect.png))
+
+**2. Long tasks stop short of what you asked, because of context rot.** *Context rot*: as a session's
+context grows, the model gradually loses track of the requirements and details from early on, and its
+work gets worse. Without learnMe, a long task forgets half the brief and calls itself done. With
+learnMe, your requirements and your own words go into layered memory and rules that every task reads.
+When a task stops, the manager, which wrote the brief and doesn't carry the task's long context,
+checks the result against what you asked for and pushes it on if it falls short. When a window is
+compacted, the summary must keep the open to-dos and your words verbatim (Claude and DeepSeek
+backends). ([layered memory](#layered-memory-that-doesnt-forget) · [a rule learned](docs/images/learn-rule.png))
+
+**3. No more juggling a pile of Claude and Codex windows every day.** Without learnMe: a terminal per
+agent per project, and you are the one who remembers what is running where. With learnMe it's all in
+one: you talk only to the manager. It answers you itself, or dispatches a task and opens a window for
+it; each window can run a different backend (Claude, Codex or DeepSeek), and one page shows them all.
+([one message, three windows](docs/images/dispatch.gif))
+
+**4. It keeps watch while you're away.** Without learnMe, *Alice (Slack): "Is the 5xx spike on billing
+from your change?"* waits until you happen to see it. With learnMe, an agent on your side reads it
+first and works out whether it can handle it: if it can, it looks into it and replies on its own; if
+it's beyond its permissions or risky, it asks for your approval. Alerts and user feedback work the
+same way: they come in, get a window and get handled.
+([unattended](docs/images/unattended.gif) · [alerts and feedback](#runs-unattended-alerts-messages-user-feedback) ·
+[Slack](#slack-optional))
+
+## How it works
+
 You talk to one **manager** in the main window. Independent work becomes its own **task window**: a
 full agent session (Claude Code, OpenAI Codex, or DeepSeek) in one of your project folders. When a
 task stops, the manager reviews it, pushes it on, corrects it, or brings it to you. Every steering
