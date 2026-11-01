@@ -432,7 +432,7 @@ class Win {
     switch (t) {
       case 'user': {
         const fromSlack = this.manager && ev.actor === 'system' && (ev.text || '').startsWith('[Slack]');
-        const who = fromSlack ? 'Slack' : { manager: tr('Manager'), auto: tr('Manager · auto-supervision'), system: this.manager ? tr('Auto-supervision') : tr('System'), event: tr('External event') }[ev.actor] || tr('You');
+        const who = fromSlack ? 'Slack' : { manager: tr('Manager'), auto: tr('Manager · auto-supervision'), system: this.manager ? tr('Auto-supervision') : tr('System'), event: tr('Outside input') }[ev.actor] || tr('You');
         const cls = { manager: ' by-manager', auto: ' by-manager', system: ' by-system' }[ev.actor] || '';
         const showBadge = this.manager ? ['append', 'correct'].includes(ev.action) : !!ev.action;
         this.add(h('div', { class: 'ev user' + cls },
@@ -1087,7 +1087,7 @@ function renderSidebar() {
     h('div', { style: 'min-width:0' },
       h('div', { class: 'tt' }, t.origin === 'manager' ? h('span', { class: 'by', text: '↳', title: tr('Dispatched by the manager') })
         : t.origin === 'slack' ? h('span', { class: 'by', text: '💬', title: tr('Dispatched for a Slack request') })
-          : t.origin === 'event' ? h('span', { class: 'by', text: '🚨', title: tr('Opened by an external event') }) : null, t.title),
+          : t.origin === 'event' ? h('span', { class: 'by', text: '📥', title: tr('Opened by outside input') }) : null, t.title),
       h('div', { class: 'st', text: `${STATUS[t.status] || t.status} · ${ago(actAt(t))}` })))),
   ]));
 }

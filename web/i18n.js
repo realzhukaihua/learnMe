@@ -28,7 +28,7 @@ const ZH = {
   'Attachments:': '附件：',
   // the event log
   'Failed to load the window: {msg}': '加载窗口失败：{msg}', 'Manager': '主控', 'Manager · auto-supervision': '主控 · 自动监督',
-  'Auto-supervision': '自动监督', 'System': '系统', 'External event': '外部事件', 'You': '你',
+  'Auto-supervision': '自动监督', 'System': '系统', 'Outside input': '外部输入', 'You': '你',
   'permission {mode}': '权限 {mode}', '💭 Thinking': '💭 思考', 'Open in Slack': '在 Slack 打开',
   '🗜 Context nearly full; compacted automatically': '🗜 上下文快满了，已自动总结压缩', '🗜 Context compacted': '🗜 已总结压缩上下文',
   '{n} tokens before': '压缩前 {n} token', 'took {d}': '用时 {d}', 'View the summary': '查看压缩摘要',
@@ -59,7 +59,7 @@ const ZH = {
   'Send failed: {msg}': '发送失败：{msg}', '↑ Needs you: {title}': '↑ 需要你看：{title}',
   // sidebar and connection
   'Nothing waiting for you': '没有等你处理的任务', 'No tasks yet': '这里还没有任务', 'Dispatched by the manager': '主控派发',
-  'Dispatched for a Slack request': '按 Slack 请求派发', 'Opened by an external event': '外部事件打开的',
+  'Dispatched for a Slack request': '按 Slack 请求派发', 'Opened by outside input': '外部输入打开的',
   'Main window': '主窗口', '● Connected': '● 已连接', '● Reconnecting…': '● 重连中…', '● Disconnected': '● 未连接',
   'Failed to load state: {msg}': '加载状态失败：{msg}', 'Failed to load projects: {msg}': '读取项目列表失败：{msg}',
   '{name} · used {n}×': '{name} · 用过 {n} 次', 'Dispatch failed: {msg}': '派发失败：{msg}',

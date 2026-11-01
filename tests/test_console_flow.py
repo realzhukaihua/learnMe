@@ -130,3 +130,44 @@ def test_external_events(monkeypatch):
         await c.shutdown()
 
     asyncio.run(asyncio.wait_for(main(), 60))
+
+
+def test_watcher_follows_new_items(tmp_path):
+    """A watcher polls a command; the first poll is a baseline, later new items open windows once."""
+    import json
+    import sys
+
+    from server.console import Console
+    from server.events import EventRouter, Watcher
+
+    feed = tmp_path / "feedback.json"
+    feed.write_text(json.dumps([{"number": 1, "title": "old report", "body": "seen before learnMe started"}]))
+    runbook = tmp_path / "feedback.md"
+    runbook.write_text("Triage feedback: reproduce, find the cause, propose a fix. Never reply to users.")
+    cmd = f"{sys.executable} -c \"import sys; print(open(sys.argv[1]).read())\" {feed}"
+
+    async def main():
+        c = Console()
+        er = EventRouter(c)
+        w = Watcher(er, {"name": "feedback", "command": cmd, "id": "number", "project": "demo",
+                         "runbook": str(runbook)})
+        assert await w.poll() == 0  # baseline only
+        items = [{"number": 1, "title": "old report"}, {"number": 2, "title": "Export button does nothing", "body": "on Safari"}]
+        feed.write_text(json.dumps({"items": items}))
+        assert await w.poll() == 1
+        assert await w.poll() == 0  # nothing new
+        task = next(t for t in c.store.list_tasks() if t["title"].startswith("📥 feedback · Export button"))
+        s = c.session(task["id"])
+        await until(lambda: s.task["turns"] >= 1)
+        prompt = c.store.first_prompt(s.id)
+        assert "Never reply to users" in prompt and "> " in prompt and "on Safari" in prompt
+        assert s.task["cwd"].endswith("/demo") and s.task["origin"] == "event"
+        # Batch mode: everything new in one poll goes to one window.
+        b = Watcher(er, {"name": "batch-feed", "command": cmd, "id": "number", "batch": True, "first_run": "handle"})
+        feed.write_text("\n".join(json.dumps({"number": n, "title": f"t{n}"}) for n in (10, 11, 12)))
+        assert await b.poll() == 3
+        batch = [t for t in c.store.list_tasks() if t["title"].startswith("📥 batch-feed")]
+        assert len(batch) == 1 and "3 new items" in batch[0]["title"]
+        await c.shutdown()
+
+    asyncio.run(asyncio.wait_for(main(), 60))

@@ -45,10 +45,36 @@ manager_backend = "claude"      # backend for the main window (the manager)
 # config = { "model_auto_compact_token_limit" = 200000 }   # extra `-c` style overrides per thread
 
 [events]
-# Autonomous on-call: POST /api/events opens a window per alert. Off unless a token is set.
+# learnMe as a service: outside input opens windows that handle it on their own.
+# Push: POST /api/events (off unless a token is set). Pull: [[events.watchers]] below.
 # token = "change-me"           # or LEARNME_EVENTS_TOKEN
-# max_per_day = 50
-# project = "my-service"        # default project for events that don't name one
+# max_per_day = 50              # pushed and pulled together
+# project = "my-service"        # default project for items that don't name one
 # backend = "claude"
 # permission_mode = "default"   # tool calls that need approval wait in the window for you
-# runbook = "~/runbooks/on-call.md"   # standing instructions put in front of every event
+# runbook = "~/runbooks/inbox.md"   # standing instructions put in front of every item
+
+# Per-source settings, for pushed items with that "source" (and watchers of that name):
+# [events.sources.alertmanager]
+# project = "api-server"
+# runbook = "~/runbooks/alerts.md"
+
+# Follow user feedback: new GitHub issues labelled "feedback", every 10 minutes, one window each.
+# [[events.watchers]]
+# name = "feedback"
+# command = "gh issue list --repo you/app --label feedback --state open --json number,title,body,url"
+# id = "number"
+# every = 600
+# project = "app"
+# runbook = "~/runbooks/feedback.md"   # e.g. reproduce, classify, propose a fix; reply with `gh issue comment`
+# batch = false                 # true: all new items of one poll go to one window
+# track_changes = false         # true: an edited item counts as an update to its window
+# first_run = "skip"            # items already there at the first poll are only remembered
+
+# Or poll an HTTP API (environment variables are expanded in url and headers):
+# [[events.watchers]]
+# name = "support"
+# url = "https://support.example.com/api/tickets?status=new"
+# headers = { Authorization = "Bearer ${SUPPORT_TOKEN}" }
+# id = "id"
+# every = 300

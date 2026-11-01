@@ -41,7 +41,7 @@ async def lifespan(_app: FastAPI):
             log.warning("backend %s: %s", b["name"], "; ".join(b["problems"]))
     console.resume(console.recover())
     loops = [asyncio.create_task(console.reap_idle()), asyncio.create_task(console.supervisor.run()),
-             asyncio.create_task(console.watch_memory())]
+             asyncio.create_task(console.watch_memory()), asyncio.create_task(events.run_watchers())]
     if console.slack:
         console.spawn(console.slack.start())
     yield
@@ -126,7 +126,7 @@ async def lang():
 async def state():
     return {"manager": console.manager().public(), "tasks": console.tasks(), "settings": console.settings,
             "lang": CONFIG.language, "backends": backends.overview(),
-            "slack": bool(console.slack), "events": events.enabled}
+            "slack": bool(console.slack), "events": events.enabled, "watchers": [w.name for w in events.watchers]}
 
 
 @app.get("/api/backends")

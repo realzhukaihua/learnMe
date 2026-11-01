@@ -83,7 +83,7 @@ class Supervisor:
     @staticmethod
     def drivers() -> dict[str, str]:
         return {"user": tr("the user (in the task window)"), "manager": tr("the manager (on the user's word in the main window)"),
-                "auto": tr("the manager (automatic supervision)"), "event": tr("an external event"),
+                "auto": tr("the manager (automatic supervision)"), "event": tr("outside input"),
                 "slack": tr("a Slack window")}
 
     def ask_consolidation(self, over: list[dict]) -> None:
