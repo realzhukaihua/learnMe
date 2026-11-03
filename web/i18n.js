@@ -7,6 +7,7 @@
 const LANG = window.LEARNME_LANG === 'zh' ? 'zh' : 'en';
 
 const ZH = {
+  'More': '更多',
   // statuses and labels
   'Running': '运行中', 'Waiting for you': '等你确认', 'Turn done · needs a decision': '本轮完成 · 待决策',
   'Interrupted · needs a decision': '已中断 · 待决策', 'Error · needs a decision': '出错 · 待决策', 'Ended': '已结束',

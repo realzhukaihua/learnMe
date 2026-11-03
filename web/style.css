@@ -93,7 +93,7 @@ code, pre { font-family: var(--mono); font-size: 12.5px; }
 #layout {
   height: calc(100vh - var(--top-h));
   display: grid;
-  grid-template-columns: 250px minmax(380px, 36vw) 1fr;
+  grid-template-columns: 250px 430px minmax(0, 1fr);
 }
 #sidebar {
   border-right: 1px solid var(--border);
@@ -457,3 +457,79 @@ body.popout #empty-hint { display: none; }
 .att-btn { padding: 4px 8px; }
 dialog .row.end .att-btn { margin-right: auto; }
 .win.dropping, #new-task-form.dropping { outline: 2px dashed var(--accent); outline-offset: -4px; }
+
+#console-tools, .win-options { display: none; }
+.win-foot { flex-shrink: 0; }
+/* Keep conversation space on phones; the same controls remain in two menus. */
+@media (max-width: 720px) and (pointer: coarse), (max-width: 480px) {
+  :root { --top-h: 52px; }
+  #topbar {
+    height: var(--top-h); min-height: var(--top-h); padding: 4px 6px;
+    display: grid; grid-template-columns: 44px minmax(0, 1fr) auto 48px; gap: 4px;
+  }
+  #side-toggle { min-width: 44px; min-height: 44px; padding: 0; }
+  #conn { grid-column: 3; grid-row: 1; font-size: 11px; white-space: nowrap; }
+  #console-tools { display: block; grid-column: 4; grid-row: 1; }
+  #console-tools > summary, .win-options > summary {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 44px; min-width: 44px; padding: 0 5px; cursor: pointer;
+    border: 1px solid var(--border-2); border-radius: 6px; list-style: none;
+  }
+  #console-tools > summary::-webkit-details-marker,
+  .win-options > summary::-webkit-details-marker { display: none; }
+  #console-tools[open] > summary, .win-options[open] > summary { border-color: var(--accent); }
+  .console-tools-panel {
+    position: absolute; z-index: 45; top: var(--top-h); left: 6px; right: 6px;
+    display: flex; flex-direction: column; gap: 10px; padding: 12px;
+    max-height: calc(var(--visible-height, 100dvh) - var(--top-h) - 12px); overflow-y: auto;
+    background: var(--panel); border: 1px solid var(--border-2); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+  }
+  #counters { flex: none; }
+  #counters .counter { flex: 1; justify-content: center; min-height: 44px; padding: 4px; }
+  .top-right { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .top-right button, .top-right .switch { min-height: 44px; font-size: 13px; }
+  .win-head { position: relative; padding: 2px 8px; min-height: 50px; gap: 8px; }
+  .win.manager .win-head { flex-wrap: nowrap; }
+  #main-col .win.manager .win-title > .t, .win-title .proj { display: none; }
+  .win-title .sub { overflow: hidden; }
+  .win-title .meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .win-options { display: block; }
+  .win-options .win-actions {
+    position: absolute; z-index: 25; top: 100%; right: 0;
+    width: min(330px, calc(100vw - 24px)); padding: 10px;
+    display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 8px;
+    background: var(--panel-2); border: 1px solid var(--border-2); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+  }
+  .win-actions .mobile-meta { display: block; flex-basis: 100%; color: var(--dim); }
+  .win-options .icon-btn { min-width: 44px; min-height: 44px; }
+  .win-options .ctx { flex-basis: 100%; }
+  .win-foot .btns > button { min-width: 44px; min-height: 44px; }
+}
+
+.att-tray, .atts { display: flex; flex-wrap: wrap; gap: 6px; }
+.atts { margin-top: 4px; white-space: normal; }
+.att {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  padding: 1px 4px 1px 8px; border: 1px solid var(--border-2); border-radius: 6px;
+  background: var(--panel-3); font-size: 12px; color: var(--text);
+}
+.atts .att { padding-right: 8px; color: var(--accent); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.att > a, .att > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.att a { color: var(--accent); text-decoration: none; }
+.att i { font-style: normal; color: var(--faint); flex: none; }
+.att.up i { color: var(--accent); }
+.att.err { border-color: rgba(240, 106, 106, .6); }
+.att.err i { color: var(--red); }
+.att .x { background: none; border: 0; padding: 0 4px; color: var(--dim); line-height: 1; }
+.att .x:hover { color: var(--red); }
+.att-btn { padding: 4px 8px; }
+dialog .row.end .att-btn { margin-right: auto; }
+.win.dropping, #new-task-form.dropping { outline: 2px dashed var(--accent); outline-offset: -4px; }
+
+@media (max-width: 720px) and (pointer: coarse), (max-width: 480px) {
+  .brand { font-size: 16px; min-width: 0; }
+  .top-right .mgr-backend { grid-column: 1 / -1; }
+  .demo-tag { display: none; }
+}

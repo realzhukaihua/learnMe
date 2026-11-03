@@ -18,6 +18,10 @@
   <button id="side-toggle" class="icon-btn" data-i18n-title="Task list">☰</button>
   <div class="brand">learnMe</div>
   <span id="demo-tag" class="demo-tag" hidden data-i18n-title="Demo mode: the agents' replies are scripted and no model is called; the console around them is the real code. Run ./run.sh demo again to replay." data-i18n="Demo · scripted agents"></span>
+  <details id="console-tools">
+    <summary data-i18n="More">More</summary>
+    <div class="console-tools-panel"></div>
+  </details>
   <nav id="counters"></nav>
   <div class="top-right">
     <label class="mgr-backend" data-i18n-title="Manager on"><span data-i18n="Manager on"></span>
@@ -125,6 +129,7 @@
         <div class="t"></div>
         <div class="sub"><span class="proj"></span><span class="meta"></span></div>
       </div>
+      <details class="win-options"><summary data-i18n="More">More</summary></details>
       <div class="win-actions">
         <span class="ctx" hidden><span class="ctx-bar"><i></i></span><span class="ctx-num"></span></span>
         <button class="icon-btn" data-act="compact" data-i18n-title="Summarize the conversation so far to free up context (like /compact)" data-i18n="Compact" hidden></button>

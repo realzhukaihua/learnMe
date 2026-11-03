@@ -26,6 +26,43 @@ const MGR_TOOLS = {
 
 const S = { tasks: new Map(), wins: new Map(), projects: [], filter: 'open', booted: false, settings: {}, act: new Map() };
 
+const COMPACT_UI = matchMedia('(max-width: 720px) and (pointer: coarse), (max-width: 480px)');
+
+function setupCompactTools() {
+  const tools = document.getElementById('console-tools');
+  const panel = tools.querySelector('.console-tools-panel');
+  const counters = document.getElementById('counters');
+  const right = document.querySelector('.top-right');
+  const connection = document.getElementById('conn');
+  const apply = () => {
+    tools.open = false;
+    if (COMPACT_UI.matches) {
+      panel.append(counters, right);
+      tools.after(connection);
+    } else {
+      tools.before(counters, right);
+      right.append(connection);
+    }
+    for (const w of S.wins.values()) w.layoutTools();
+  };
+  COMPACT_UI.addEventListener('change', apply);
+  document.addEventListener('click', event => {
+    if (!COMPACT_UI.matches || event.target.closest('summary')) return;
+    if (event.target.closest('#console-tools button, #console-tools .counter, .win-options button')
+        || !event.target.closest('#console-tools, .win-options')) {
+      tools.open = false;
+      for (const w of S.wins.values()) w.q('.win-options').open = false;
+    }
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      tools.open = false;
+      for (const w of S.wins.values()) w.q('.win-options').open = false;
+    }
+  });
+  apply();
+}
+
 // ---------- helpers ----------
 
 const NO_GRAMMARLY = { 'data-gramm': 'false', 'data-gramm_editor': 'false', 'data-enable-grammarly': 'false' };
@@ -300,6 +337,9 @@ class Win {
     this.manager = id === MANAGER_ID;
     this.lastSeq = 0;
     this.syncing = false;
+    this.followLatest = true;
+    this.followScrollTop = null;
+    this.scrollFrame = null;
     this.buffer = [];
     this.tools = new Map();
     this.perms = new Map();
@@ -310,7 +350,17 @@ class Win {
     this.el = document.getElementById('tpl-win').content.firstElementChild.cloneNode(true);
     this.el.dataset.id = id;
     this.q = sel => this.el.querySelector(sel);
+    this.layoutTools();
     this.log = this.q('.log');
+    this.log.addEventListener('scroll', () => {
+      if (this.followLatest && this.log.scrollTop === this.followScrollTop) return;
+      this.followLatest = this.atBottom();
+    }, { passive: true });
+    this.scrollResize = new ResizeObserver(() => this.queueScroll());
+    this.scrollResize.observe(this.log);
+    this.scrollMutation = new MutationObserver(() => this.queueScroll());
+    this.scrollMutation.observe(this.log, { childList: true, subtree: true, characterData: true });
+    this.log.addEventListener('load', () => this.queueScroll(), true);
     this.msg = this.q('.msg');
     this.todosEl = this.q('.todos');
     this.decideEl = this.q('.decide');
@@ -369,7 +419,7 @@ class Win {
     if (this.syncing) return;
     this.syncing = true;
     const first = this.lastSeq === 0;
-    const stick = first || this.atBottom();
+    if (first) this.followLatest = true;
     try {
       const evs = await api(`/api/tasks/${encodeURIComponent(this.id)}/events?after=${this.lastSeq}`);
       for (const ev of evs) this.apply(ev);
@@ -381,7 +431,7 @@ class Win {
       this.syncing = false;
     }
     this.refreshPerms();
-    if (stick) this.scrollBottom();
+    if (this.followLatest) { this.scrollBottom(); this.queueScroll(); }
   }
 
   receive(ev) {
@@ -394,9 +444,9 @@ class Win {
       this.load();
       return;
     }
-    const stick = this.atBottom();
+    const stick = this.followLatest;
     this.apply(ev);
-    if (stick) this.scrollBottom();
+    if (stick) { this.scrollBottom(); this.queueScroll(); }
   }
 
   apply(ev) {
@@ -408,7 +458,29 @@ class Win {
   }
 
   atBottom() { return this.log.scrollHeight - this.log.scrollTop - this.log.clientHeight < 80; }
-  scrollBottom() { this.log.scrollTop = this.log.scrollHeight; }
+  scrollBottom() {
+    this.log.scrollTop = this.log.scrollHeight;
+    this.followScrollTop = this.log.scrollTop;
+  }
+  queueScroll() {
+    if (this.scrollFrame != null) return;
+    this.scrollFrame = requestAnimationFrame(() => {
+      this.scrollFrame = null;
+      if (this.followLatest && this.el.isConnected) this.scrollBottom();
+    });
+  }
+  showLatest() {
+    this.followLatest = true;
+    this.scrollBottom();
+    this.queueScroll();
+  }
+  layoutTools() {
+    const menu = this.q('.win-options');
+    const actions = this.q('.win-actions');
+    menu.open = false;
+    if (COMPACT_UI.matches) menu.append(actions);
+    else this.q('.win-head').append(actions);
+  }
   add(el) { this.log.append(el); return el; }
 
   clearLog() { // "clear conversation": only the screen; the events stay in the DB
@@ -812,6 +884,7 @@ class Win {
   }
 
   async sendText(text, correct) {
+    this.showLatest();
     try {
       await api(`/api/tasks/${encodeURIComponent(this.id)}/messages`, { text, correct });
       return true;
@@ -874,6 +947,7 @@ function openWin(id, { focus = false, prepend = true } = {}) {
     scheduleSidebar();
   }
   if (focus) {
+    w.showLatest();
     w.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     w.el.classList.remove('flash');
     void w.el.offsetWidth;
@@ -1020,6 +1094,9 @@ function markSeen() {
 function closeWin(id) {
   const w = S.wins.get(id);
   if (!w) return;
+  w.scrollResize.disconnect();
+  w.scrollMutation.disconnect();
+  if (w.scrollFrame != null) cancelAnimationFrame(w.scrollFrame);
   w.el.remove();
   S.wins.delete(id);
   saveOpen();
@@ -1677,6 +1754,7 @@ document.getElementById('manager-backend').addEventListener('change', async e =>
   }
 });
 
+setupCompactTools();
 setupDialog();
 setupMemory();
 setupHistory();
